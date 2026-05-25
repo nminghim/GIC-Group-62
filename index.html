@@ -1,0 +1,1063 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GRIP - Ground Responsive Inflation Platform</title>
+  <!-- Google Fonts: Outfit (Geometric Sans-Serif) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@200;300;400;500;600;700&display=swap" rel="stylesheet">
+  
+  <style>
+    :root {
+      --bg-color: #08090a;
+      --tile-bg: #101114;
+      --tile-border: rgba(255, 255, 255, 0.04);
+      --tile-hover-border: rgba(191, 160, 117, 0.25);
+      
+      --text-primary: #ffffff;
+      --text-secondary: #8c8e94;
+      --text-muted: #4e5057;
+      
+      /* GRIP Palette */
+      --color-gold: #bfa075;         /* Satin Champagne / Bronze */
+      --color-gold-muted: #5e4f3a;
+      --color-gold-glow: rgba(191, 160, 117, 0.15);
+      
+      --color-ice-blue: #8bc3eb;     /* Cool Blue for Deflating */
+      --color-crimson: #a83232;      /* Muted Red for Faults */
+      --color-green: #277a5b;        /* Muted Green for Active */
+      
+      --font-family: 'Outfit', -apple-system, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: var(--font-family);
+      background-color: var(--bg-color);
+      color: var(--text-primary);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      letter-spacing: 0.02em;
+    }
+
+    header {
+      padding: 2rem 2.5rem 1.5rem 2.5rem;
+      border-bottom: 1px solid var(--tile-border);
+      background-color: #08090a;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .brand-container {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+
+    h1 {
+      font-size: 1.15rem;
+      font-weight: 500;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--text-primary);
+    }
+
+    .subtitle {
+      font-size: 0.7rem;
+      font-weight: 400;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--color-gold);
+    }
+
+    .connection-status {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.4rem 1rem;
+      font-size: 0.7rem;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      border: 1px solid var(--tile-border);
+      background: rgba(255, 255, 255, 0.01);
+      color: var(--text-secondary);
+      transition: all 0.3s ease;
+    }
+
+    .status-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background-color: var(--color-crimson);
+    }
+
+    .connected .status-dot {
+      background-color: var(--color-gold);
+      box-shadow: 0 0 8px var(--color-gold);
+    }
+
+    .connected {
+      color: var(--text-primary);
+      border-color: rgba(191, 160, 117, 0.3);
+    }
+
+    main {
+      flex: 1;
+      max-width: 1300px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 1.5rem 2.5rem 2.5rem 2.5rem;
+    }
+
+    @media (max-width: 950px) {
+      main {
+        padding: 1rem 1.5rem 1.5rem 1.5rem;
+      }
+    }
+
+    /* Tabs System */
+    .tabs-container {
+      max-width: 1300px;
+      width: 100%;
+      margin: 1.5rem auto 0 auto;
+      padding: 0 2.5rem;
+      display: flex;
+      gap: 1.5rem;
+      border-bottom: 1px solid var(--tile-border);
+    }
+
+    @media (max-width: 950px) {
+      .tabs-container {
+        padding: 0 1.5rem;
+      }
+    }
+
+    .tab-btn {
+      background: transparent;
+      border: none;
+      border-bottom: 2px solid transparent;
+      color: var(--text-secondary);
+      font-family: var(--font-family);
+      font-size: 0.8rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+      padding: 0.75rem 0.5rem;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .tab-btn:hover {
+      color: var(--color-gold);
+    }
+
+    .tab-btn.active {
+      color: var(--color-gold);
+      border-color: var(--color-gold);
+    }
+
+    .tab-content {
+      display: none;
+      width: 100%;
+    }
+
+    .tab-content.active-tab-content {
+      display: grid;
+    }
+
+    #tab-controls.active-tab-content {
+      display: grid;
+      grid-template-columns: 420px 1fr;
+      gap: 2rem;
+    }
+
+    @media (max-width: 950px) {
+      #tab-controls.active-tab-content {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    #tab-logs.active-tab-content {
+      display: block;
+    }
+
+    .tile {
+      background-color: var(--tile-bg);
+      border: 1px solid var(--tile-border);
+      padding: 2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 2rem;
+      position: relative;
+      transition: border-color 0.4s ease, box-shadow 0.4s ease;
+    }
+
+    .tile:hover {
+      border-color: var(--tile-hover-border);
+    }
+
+    .tile-title {
+      font-size: 0.75rem;
+      font-weight: 500;
+      color: var(--color-gold);
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+      padding-bottom: 0.75rem;
+    }
+
+    .tile-title span.state-label {
+      font-size: 0.7rem;
+      color: var(--text-secondary);
+      letter-spacing: 0.05em;
+    }
+
+    /* Minimal Telemetry Display */
+    .gauge-module {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem 0;
+    }
+
+    .gauge-wrapper {
+      position: relative;
+      width: 220px;
+      height: 220px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .gauge-ring-svg {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      transform: rotate(-90deg);
+    }
+
+    .gauge-ring-bg {
+      fill: none;
+      stroke: rgba(255, 255, 255, 0.02);
+      stroke-width: 6;
+    }
+
+    .gauge-ring-fill {
+      fill: none;
+      stroke: var(--text-secondary);
+      stroke-width: 6;
+      stroke-linecap: square;
+      stroke-dasharray: 628.3; /* 2 * PI * r (r=100) */
+      stroke-dashoffset: 628.3;
+      transition: stroke-dashoffset 0.6s cubic-bezier(0.16, 1, 0.3, 1), stroke 0.6s ease;
+    }
+
+    .gauge-center-text {
+      text-align: center;
+      z-index: 10;
+    }
+
+    .pressure-value {
+      font-size: 3.75rem;
+      font-weight: 200;
+      line-height: 1;
+      color: var(--text-primary);
+      transition: color 0.4s ease;
+    }
+
+    .pressure-unit {
+      font-size: 0.75rem;
+      font-weight: 500;
+      letter-spacing: 0.2em;
+      color: var(--text-secondary);
+      margin-top: 0.5rem;
+      text-transform: uppercase;
+    }
+
+    /* States & Colored Indicators */
+    .state-inflating .gauge-ring-fill {
+      stroke: var(--color-gold);
+    }
+    .state-inflating .pressure-value {
+      color: var(--color-gold);
+      text-shadow: 0 0 15px rgba(191, 160, 117, 0.15);
+    }
+
+    .state-deflating .gauge-ring-fill {
+      stroke: var(--color-ice-blue);
+    }
+    .state-deflating .pressure-value {
+      color: var(--color-ice-blue);
+    }
+
+    .state-fault .gauge-ring-fill {
+      stroke: var(--color-crimson);
+    }
+    .state-fault .pressure-value {
+      color: var(--color-crimson);
+    }
+
+    /* Active components badges */
+    .component-status-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      width: 100%;
+    }
+
+    .comp-status-row {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.75rem 1rem;
+      border: 1px solid var(--tile-border);
+      background: rgba(255, 255, 255, 0.01);
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-secondary);
+      transition: all 0.3s ease;
+    }
+
+    .comp-status-row svg {
+      width: 16px;
+      height: 16px;
+      stroke-width: 1.5;
+    }
+
+    .comp-status-row.active {
+      color: var(--text-primary);
+      border-color: rgba(191, 160, 117, 0.3);
+      background: rgba(191, 160, 117, 0.03);
+    }
+
+    .comp-status-row.active.deflate {
+      border-color: rgba(139, 195, 235, 0.3);
+      background: rgba(139, 195, 235, 0.03);
+    }
+
+    /* Key metrics text */
+    .telemetry-meta {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      width: 100%;
+    }
+
+    .meta-box {
+      border-left: 1px solid var(--tile-border);
+      padding-left: 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+    }
+
+    .meta-label {
+      font-size: 0.65rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--text-secondary);
+    }
+
+    .meta-val {
+      font-size: 1.15rem;
+      font-weight: 300;
+      color: var(--text-primary);
+    }
+
+    /* GRIP-style Modular Profiles Grid */
+    .profile-section {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    .profiles-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: 1rem;
+    }
+
+    .profile-tile {
+      background: rgba(255, 255, 255, 0.01);
+      border: 1px solid var(--tile-border);
+      padding: 1.25rem 1rem;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.75rem;
+      text-align: center;
+      transition: all 0.3s ease;
+    }
+
+    .profile-tile:hover {
+      border-color: rgba(255, 255, 255, 0.15);
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    .profile-tile.active {
+      border-color: var(--color-gold);
+      background: rgba(191, 160, 117, 0.04);
+    }
+
+    .profile-tile svg {
+      width: 28px;
+      height: 28px;
+      stroke: var(--text-secondary);
+      stroke-width: 1.25;
+      transition: stroke 0.3s ease;
+    }
+
+    .profile-tile.active svg {
+      stroke: var(--color-gold);
+    }
+
+    .profile-label {
+      font-size: 0.75rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-primary);
+    }
+
+    .profile-val {
+      font-size: 0.75rem;
+      font-weight: 400;
+      letter-spacing: 0.05em;
+      color: var(--text-secondary);
+    }
+
+    /* Manual settings sliders */
+    .manual-controls {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+      border-top: 1px solid rgba(255, 255, 255, 0.03);
+      padding-top: 1.5rem;
+    }
+
+    .slider-container {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .slider-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+    }
+
+    .slider-title {
+      font-size: 0.7rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-secondary);
+    }
+
+    .slider-val-readout {
+      font-size: 1.25rem;
+      font-weight: 300;
+      color: var(--color-gold);
+    }
+
+    .grip-slider {
+      -webkit-appearance: none;
+      width: 100%;
+      height: 2px;
+      background: rgba(255, 255, 255, 0.08);
+      outline: none;
+      border-radius: 0;
+    }
+
+    .grip-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 14px;
+      height: 14px;
+      background: var(--color-gold);
+      border: 1px solid var(--bg-color);
+      cursor: pointer;
+      border-radius: 0;
+      transition: transform 0.15s ease;
+    }
+
+    .grip-slider::-webkit-slider-thumb:hover {
+      transform: scale(1.25);
+    }
+
+    /* Satin finish premium buttons */
+    .btn-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+
+    .grip-btn {
+      background: transparent;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      color: var(--text-primary);
+      padding: 0.75rem 1rem;
+      font-family: var(--font-family);
+      font-size: 0.7rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+      cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .grip-btn:hover {
+      border-color: var(--color-gold);
+      background: rgba(191, 160, 117, 0.02);
+      color: var(--color-gold);
+    }
+
+    .grip-btn svg {
+      width: 12px;
+      height: 12px;
+      stroke-width: 1.5;
+    }
+
+    .grip-btn-start {
+      border-color: rgba(39, 122, 91, 0.4);
+      color: #7ee8c1;
+    }
+
+    .grip-btn-start:hover {
+      background: rgba(39, 122, 91, 0.1);
+      border-color: #4ade80;
+      color: #ffffff;
+    }
+
+    .grip-btn-stop {
+      border-color: rgba(168, 50, 50, 0.4);
+      color: #ff8585;
+    }
+
+    .grip-btn-stop:hover {
+      background: rgba(168, 50, 50, 0.1);
+      border-color: #e05e5e;
+      color: #ffffff;
+    }
+
+    /* Minimalist Log Display */
+    .log-tile {
+      grid-column: 1 / -1;
+    }
+
+    .log-console {
+      background: rgba(0, 0, 0, 0.15);
+      border: 1px solid rgba(255, 255, 255, 0.02);
+      padding: 1.25rem;
+      font-family: monospace;
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+      max-height: 180px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+    }
+
+    .log-row {
+      line-height: 1.4;
+      border-left: 1px solid rgba(255, 255, 255, 0.05);
+      padding-left: 0.5rem;
+    }
+
+    .log-row.err {
+      color: #e05e5e;
+      border-left-color: var(--color-crimson);
+    }
+
+    .log-row.evt {
+      color: var(--color-gold);
+      border-left-color: var(--color-gold);
+    }
+
+    footer {
+      text-align: center;
+      padding: 2rem;
+      font-size: 0.65rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      border-top: 1px solid var(--tile-border);
+      background-color: #08090a;
+      margin-top: auto;
+    }
+
+    /* Animation effects */
+    .fan-spin {
+      animation: spin 2.5s infinite linear;
+    }
+
+    .pulse-glow {
+      animation: opacity-pulse 1.8s infinite ease-in-out;
+    }
+
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    @keyframes opacity-pulse {
+      0%, 100% { opacity: 0.4; }
+      50% { opacity: 1; }
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="brand-container">
+      <h1>Ground Responsive Inflation Platform</h1>
+      <div class="subtitle">GRIP Status &amp; Calibration</div>
+    </div>
+    <div style="display: flex; align-items: center; gap: 0.75rem;">
+      <div id="ipConfigContainer" style="display: none; align-items: center; gap: 0.5rem;">
+        <input type="text" id="ipInput" placeholder="Server IP (e.g. 192.168.1.50)" style="background: #101114; border: 1px solid rgba(255, 255, 255, 0.08); color: #ffffff; padding: 0.4rem 0.75rem; font-size: 0.7rem; font-family: var(--font-family); outline: none; width: 180px; text-align: center; letter-spacing: 0.05em;" />
+        <button onclick="saveIp()" style="background: var(--color-gold-muted); border: 1px solid var(--color-gold); color: #ffffff; padding: 0.4rem 0.75rem; font-size: 0.7rem; font-family: var(--font-family); cursor: pointer; text-transform: uppercase; letter-spacing: 0.1em;">Connect</button>
+      </div>
+      <div id="connectionStatus" class="connection-status" style="cursor: pointer; user-select: none;" onclick="toggleIpConfig()" title="Click to configure Server IP">
+        <span class="status-dot"></span>
+        <span class="status-text">Offline</span>
+      </div>
+    </div>
+  </header>
+
+  <div class="tabs-container">
+    <button class="tab-btn active" onclick="switchTab('controls', this)">Calibration Controls</button>
+    <button class="tab-btn" onclick="switchTab('logs', this)">Live Diagnostics Log</button>
+  </div>
+
+  <main>
+    <!-- Tab 1: Controls & Telemetry -->
+    <div id="tab-controls" class="tab-content active-tab-content">
+      <!-- LEFT COLUMN: Live Telemetry Tile -->
+      <div class="tile" id="telemetryTile">
+        <div class="tile-title">
+          <span>Telemetry</span>
+          <span id="telemetryState" class="state-label">Idle</span>
+        </div>
+
+        <div class="gauge-module">
+          <div class="gauge-wrapper">
+            <svg class="gauge-ring-svg" viewBox="0 0 220 220">
+              <circle class="gauge-ring-bg" cx="110" cy="110" r="100"></circle>
+              <circle id="gaugeRingFill" class="gauge-ring-fill" cx="110" cy="110" r="100"></circle>
+            </svg>
+            <div class="gauge-center-text">
+              <div id="pressureVal" class="pressure-value">0.0</div>
+              <div class="pressure-unit">PSI</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="component-status-grid">
+          <div id="badgePump" class="comp-status-row">
+            <svg id="pumpIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 2v20M2 12h20M12 12l7.07-7.07M4.93 19.07l14.14-14.14M4.93 4.93l14.14 14.14" stroke-linecap="round"/></svg>
+            <span>Compressor</span>
+          </div>
+          <div id="badgeValve" class="comp-status-row deflate">
+            <svg id="valveIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 5v14M5 12h14M17 9l-5 5-5-5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <span>Release Valve</span>
+          </div>
+        </div>
+
+        <div class="telemetry-meta">
+          <div class="meta-box">
+            <span class="meta-label">Target PSI</span>
+            <span id="metaTarget" class="meta-val">--</span>
+          </div>
+          <div class="meta-box">
+            <span class="meta-label">Tolerance &#177;</span>
+            <span id="metaTolerance" class="meta-val">--</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT COLUMN: Profiles & Controls Tile -->
+      <div class="tile" style="justify-content: space-between;">
+        <div class="profile-section">
+          <div class="tile-title">
+            <span>Terrain Calibration Profiles</span>
+          </div>
+          <div id="profilesGrid" class="profiles-grid">
+            <!-- Populated by JS -->
+          </div>
+        </div>
+
+        <div class="manual-controls">
+          <div class="slider-container">
+            <div class="slider-meta">
+              <span class="slider-title">Manual Calibration Level</span>
+              <span id="sliderValueReadout" class="slider-val-readout">30.0 PSI</span>
+            </div>
+            <input type="range" id="customSlider" class="grip-slider" min="5" max="75" value="30" step="0.5">
+          </div>
+
+          <div class="btn-grid" style="grid-template-columns: 1fr;">
+            <button class="grip-btn" onclick="applyCustomTarget()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 5v14M5 12h14" stroke-linecap="round"/></svg>
+              <span>Apply Custom Target</span>
+            </button>
+          </div>
+
+          <div class="btn-grid" style="border-top: 1px solid rgba(255, 255, 255, 0.03); padding-top: 1.5rem; margin-top: 0.5rem;">
+            <button class="grip-btn grip-btn-start" onclick="sendCommand('start')">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M5 3l14 9-14 9V3z" fill="currentColor"/></svg>
+              <span>Activate</span>
+            </button>
+            <button class="grip-btn grip-btn-stop" onclick="sendCommand('stop')">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="4" y="4" width="16" height="16" fill="currentColor" stroke-width="1.5"/></svg>
+              <span>Suspend Operation</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab 2: Logs -->
+    <div id="tab-logs" class="tab-content">
+      <div class="tile log-tile">
+        <div class="tile-title">
+          <span>Operation Diagnostics Log</span>
+        </div>
+        <div id="logConsole" class="log-console" style="max-height: 500px; height: 500px;">
+          <div class="log-row">System initialized. Awaiting hardware connection...</div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    GROUND RESPONSIVE INFLATION PLATFORM (GRIP) &copy; 2026.
+  </footer>
+
+  <script>
+    function switchTab(tabId, btnEl) {
+      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+      btnEl.classList.add('active');
+      document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active-tab-content'));
+      document.getElementById(`tab-${tabId}`).classList.add('active-tab-content');
+    }
+
+    // Minimalist GRIP SVG Paths
+    const PROFILE_SVG_ICONS = {
+      "comfort": `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 22L9 2M20 22L15 2M12 4v3M12 11v3M12 17v3" stroke-linecap="round"/></svg>`,
+      "gravel_snow": `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 17c3-2 5-2 8 0s5 2 8-1M6 8l3 3m3-3l3 3M19 14l-3-3M2 20h20" stroke-linecap="round"/><circle cx="12" cy="5" r="0.7"/><circle cx="7" cy="6" r="0.7"/><circle cx="17" cy="6" r="0.7"/></svg>`,
+      "mud_ruts": `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 3v18M18 3v18M12 5v14M6 7h6M12 11h6M6 15h6M12 19h6" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+      "sand": `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 18c4-4 8-4 12-1s6 3 8-1M2 13c4-4 8-4 12-1s6 3 8-1" stroke-linecap="round"/></svg>`,
+      "rock_crawl": `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 20l4-6 4 4 6-9 4 11H3zM2 20h20" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+      "wade": `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 10c3-2 5-2 8 0s5 2 8 0 2-1 4-1M2 15c3-2 5-2 8 0s5 2 8 0 2-1 4-1" stroke-linecap="round"/></svg>`,
+      "eco": `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 22s4-12 10-14c4-2 7 0 8 2 1 1-1 4-3 8C14 20 2 22 2 22zM2 22l6-6" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+      "heavy_load": `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="7" width="12" height="10" rx="1"/><line x1="15" y1="12" x2="21" y2="12"/><circle cx="21" cy="12" r="1.5"/><circle cx="6" cy="19" r="2"/><circle cx="12" cy="19" r="2"/></svg>`
+    };
+
+    const PROFILES = {
+      "comfort": { name: "comfort", target_psi: 34.0, tolerance_psi: 1.0, desc: "Normal Tarmac/Highway" },
+      "gravel_snow": { name: "gravel_snow", target_psi: 30.0, tolerance_psi: 1.0, desc: "Slippery/Uneven Surfaces" },
+      "mud_ruts": { name: "mud_ruts", target_psi: 25.0, tolerance_psi: 1.0, desc: "Mud/Ruts/Soft Soil" },
+      "sand": { name: "sand", target_psi: 18.0, tolerance_psi: 0.8, desc: "Soft Sand/Dunes" },
+      "rock_crawl": { name: "rock_crawl", target_psi: 15.0, tolerance_psi: 0.7, desc: "Extreme Rocky Terrain" },
+      "wade": { name: "wade", target_psi: 36.0, tolerance_psi: 1.0, desc: "Water Wading/Deep Crossing" },
+      "eco": { name: "eco", target_psi: 39.0, tolerance_psi: 1.0, desc: "Optimized Efficiency" },
+      "heavy_load": { name: "heavy_load", target_psi: 42.0, tolerance_psi: 1.0, desc: "Heavy Load/Trailer Towing" }
+    };
+
+    let isConnected = false;
+    let serverIp = localStorage.getItem("server_ip") || "";
+    let sseSource = null;
+
+    function getApiBase() {
+      if (serverIp) {
+        return `http://${serverIp}:8080`;
+      }
+      if (window.location.hostname && window.location.hostname !== "localhost") {
+        return `${window.location.protocol}//${window.location.host}`;
+      }
+      return "http://localhost:8080";
+    }
+
+    function toggleIpConfig() {
+      const container = document.getElementById("ipConfigContainer");
+      const ipInput = document.getElementById("ipInput");
+      if (container.style.display === "none" || !container.style.display) {
+        container.style.display = "flex";
+        ipInput.value = localStorage.getItem("server_ip") || "";
+        ipInput.focus();
+      } else {
+        container.style.display = "none";
+      }
+    }
+
+    function saveIp() {
+      const ipInput = document.getElementById("ipInput");
+      const ip = ipInput.value.trim();
+      if (ip) {
+        localStorage.setItem("server_ip", ip);
+        serverIp = ip;
+      } else {
+        localStorage.removeItem("server_ip");
+        serverIp = "";
+      }
+      document.getElementById("ipConfigContainer").style.display = "none";
+      
+      // Reconnect
+      startSSE();
+    }
+
+    // DOM Elements
+    const connectionStatus = document.getElementById("connectionStatus");
+    const telemetryTile = document.getElementById("telemetryTile");
+    const telemetryState = document.getElementById("telemetryState");
+    const pressureVal = document.getElementById("pressureVal");
+    const gaugeRingFill = document.getElementById("gaugeRingFill");
+    const metaTarget = document.getElementById("metaTarget");
+    const metaTolerance = document.getElementById("metaTolerance");
+    const badgePump = document.getElementById("badgePump");
+    const badgeValve = document.getElementById("badgeValve");
+    const pumpIcon = document.getElementById("pumpIcon");
+    const valveIcon = document.getElementById("valveIcon");
+    const profilesGrid = document.getElementById("profilesGrid");
+    const customSlider = document.getElementById("customSlider");
+    const sliderValueReadout = document.getElementById("sliderValueReadout");
+    const logConsole = document.getElementById("logConsole");
+
+    // Dynamic slider handler
+    customSlider.addEventListener("input", (e) => {
+      sliderValueReadout.textContent = `${parseFloat(e.target.value).toFixed(1)} PSI`;
+    });
+
+    // Populate GRIP Grid
+    function renderProfilesGrid() {
+      profilesGrid.innerHTML = "";
+      Object.keys(PROFILES).forEach(key => {
+        const p = PROFILES[key];
+        const tile = document.createElement("div");
+        tile.id = `profile-${key}`;
+        tile.className = "profile-tile";
+        tile.onclick = () => selectProfile(key);
+        tile.innerHTML = `
+          ${PROFILE_SVG_ICONS[key]}
+          <div class="profile-label">${p.name.replace('_', ' ')}</div>
+          <div class="profile-val">${p.target_psi.toFixed(1)} PSI</div>
+        `;
+        profilesGrid.appendChild(tile);
+      });
+    }
+
+    async function selectProfile(key) {
+      if (!isConnected) {
+        alert("Operation Aborted: Offline");
+        return;
+      }
+      try {
+        let resp = await fetch(`${getApiBase()}/api/command`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ cmd: "set_profile", profile: key })
+        });
+        let res = await resp.json();
+        if (res.status !== "ok") {
+          console.warn(`Profile set error: ${res.message}`);
+        }
+      } catch (err) {
+        console.error("Profile set failure", err);
+      }
+    }
+
+    async function sendCommand(action) {
+      if (!isConnected && action !== "stop") {
+        alert("Operation Aborted: Offline");
+        return;
+      }
+      try {
+        let resp = await fetch(`${getApiBase()}/api/command`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ cmd: action })
+        });
+        let res = await resp.json();
+        if (res.status !== "ok") {
+          console.warn(`Command error: ${res.message}`);
+        }
+      } catch (err) {
+        console.error("Command error", err);
+      }
+    }
+
+    async function applyCustomTarget() {
+      if (!isConnected) {
+        alert("Operation Aborted: Offline");
+        return;
+      }
+      const val = parseFloat(customSlider.value);
+      try {
+        let resp = await fetch(`${getApiBase()}/api/command`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ cmd: "custom", target_psi: val })
+        });
+        let res = await resp.json();
+        if (res.status !== "ok") {
+          alert(`Calibration failure: ${res.message}`);
+        }
+      } catch (err) {
+        console.error("Manual action failure", err);
+      }
+    }
+
+    function renderLogs(events, errors) {
+      logConsole.innerHTML = "";
+      
+      let items = [...events];
+      errors.forEach(err => {
+        if (!items.includes(err)) items.push(err);
+      });
+      items.sort();
+      
+      if (items.length === 0) {
+        logConsole.innerHTML = `<div class="log-row">System operational. Awaiting logs...</div>`;
+        return;
+      }
+
+      items.forEach(log => {
+        const div = document.createElement("div");
+        div.className = "log-row";
+        if (log.includes("ERROR:")) {
+          div.className += " err";
+        } else if (log.includes("🔔") || log.includes("profile_set") || log.includes("[EVENT]")) {
+          div.className += " evt";
+        }
+        div.textContent = log;
+        logConsole.appendChild(div);
+      });
+
+      logConsole.scrollTop = logConsole.scrollHeight;
+    }
+
+    function handleStateUpdate(data) {
+      isConnected = data.connected;
+
+      if (isConnected) {
+        connectionStatus.className = "connection-status connected";
+        connectionStatus.querySelector(".status-text").textContent = "Online";
+      } else {
+        connectionStatus.className = "connection-status";
+        connectionStatus.querySelector(".status-text").textContent = "Offline";
+      }
+
+      const pressure = data.pressure_psi;
+      const target = data.target_psi;
+      const tolerance = data.tolerance_psi;
+      
+      pressureVal.textContent = pressure.toFixed(1);
+      metaTarget.textContent = target > 0 ? `${target.toFixed(1)} PSI` : "--";
+      metaTolerance.textContent = target > 0 ? `${tolerance.toFixed(1)} PSI` : "--";
+
+      if (target > 0) {
+        const pct = Math.min(pressure / target, 1.0);
+        const strokeDash = 628.3;
+        const offset = strokeDash - (pct * strokeDash);
+        gaugeRingFill.style.strokeDashoffset = offset;
+      } else {
+        gaugeRingFill.style.strokeDashoffset = 628.3;
+      }
+
+      const state = data.state || "idle";
+      telemetryState.textContent = state.toUpperCase();
+      telemetryTile.className = `tile state-${state}`;
+
+      // Pump Component Active State
+      if (data.pump) {
+        badgePump.classList.add("active");
+        pumpIcon.classList.add("fan-spin");
+      } else {
+        badgePump.classList.remove("active");
+        pumpIcon.classList.remove("fan-spin");
+      }
+
+      // Valve Component Active State
+      if (data.valve) {
+        badgeValve.classList.add("active");
+        valveIcon.classList.add("pulse-glow");
+      } else {
+        badgeValve.classList.remove("active");
+        valveIcon.classList.remove("pulse-glow");
+      }
+
+      // Selected Profile Highlight
+      const currentProfile = data.profile || "none";
+      document.querySelectorAll(".profile-tile").forEach(tile => {
+        tile.classList.remove("active");
+      });
+      const activeTile = document.getElementById(`profile-${currentProfile}`);
+      if (activeTile) {
+        activeTile.classList.add("active");
+      }
+
+      renderLogs(data.events || [], data.errors || []);
+    }
+
+    function startSSE() {
+      if (sseSource) {
+        sseSource.close();
+      }
+
+      const url = `${getApiBase()}/events`;
+      sseSource = new EventSource(url);
+
+      sseSource.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          handleStateUpdate(data);
+        } catch (e) {
+          console.error("SSE parsing error", e);
+        }
+      };
+
+      sseSource.onerror = (err) => {
+        isConnected = false;
+        connectionStatus.className = "connection-status";
+        connectionStatus.querySelector(".status-text").textContent = "Reconnecting";
+        if (sseSource) {
+          sseSource.close();
+          sseSource = null;
+        }
+        setTimeout(startSSE, 3000);
+      };
+    }
+
+    // Initialize
+    renderProfilesGrid();
+    startSSE();
+  </script>
+</body>
+</html>
