@@ -114,6 +114,80 @@
       border-color: rgba(191, 160, 117, 0.3);
     }
 
+    /* Premium Slide Switch */
+    .unit-toggle-container {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid var(--tile-border);
+      padding: 0.4rem 0.75rem;
+      transition: all 0.3s ease;
+    }
+
+    .unit-toggle-container:hover {
+      border-color: var(--tile-hover-border);
+    }
+
+    .unit-toggle-label {
+      font-size: 0.7rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      color: var(--text-secondary);
+      transition: color 0.3s ease;
+      user-select: none;
+    }
+
+    .unit-toggle-label.active {
+      color: var(--color-gold);
+    }
+
+    .grip-switch {
+      position: relative;
+      display: inline-block;
+      width: 38px;
+      height: 18px;
+    }
+
+    .grip-switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .grip-slider-switch {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: rgba(255, 255, 255, 0.08);
+      transition: .3s cubic-bezier(0.16, 1, 0.3, 1);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .grip-slider-switch:before {
+      position: absolute;
+      content: "";
+      height: 10px;
+      width: 10px;
+      left: 3px;
+      bottom: 3px;
+      background-color: var(--text-secondary);
+      transition: .3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .grip-switch input:checked + .grip-slider-switch {
+      background-color: var(--color-gold-muted);
+      border-color: var(--color-gold);
+    }
+
+    .grip-switch input:checked + .grip-slider-switch:before {
+      transform: translateX(20px);
+      background-color: var(--color-gold);
+    }
+
     main {
       flex: 1;
       max-width: 1300px;
@@ -639,7 +713,17 @@
       <h1>Ground Responsive Inflation Platform</h1>
       <div class="subtitle">GRIP Status &amp; Calibration</div>
     </div>
-    <div style="display: flex; align-items: center; gap: 0.75rem;">
+    <div style="display: flex; align-items: center; gap: 1.5rem;">
+      <!-- Slide Toggle for converting measurements into BAR from PSI -->
+      <div class="unit-toggle-container">
+        <span class="unit-toggle-label active">PSI</span>
+        <label class="grip-switch" title="Toggle pressure unit between PSI and BAR">
+          <input type="checkbox" id="unitToggle" onchange="toggleUnit(this)">
+          <span class="grip-slider-switch"></span>
+        </label>
+        <span class="unit-toggle-label">BAR</span>
+      </div>
+
       <div id="ipConfigContainer" style="display: none; align-items: center; gap: 0.5rem;">
         <input type="text" id="ipInput" placeholder="Server IP (e.g. 192.168.1.50)" style="background: #101114; border: 1px solid rgba(255, 255, 255, 0.08); color: #ffffff; padding: 0.4rem 0.75rem; font-size: 0.7rem; font-family: var(--font-family); outline: none; width: 180px; text-align: center; letter-spacing: 0.05em;" />
         <button onclick="saveIp()" style="background: var(--color-gold-muted); border: 1px solid var(--color-gold); color: #ffffff; padding: 0.4rem 0.75rem; font-size: 0.7rem; font-family: var(--font-family); cursor: pointer; text-transform: uppercase; letter-spacing: 0.1em;">Connect</button>
@@ -719,7 +803,7 @@
               <span class="slider-title">Manual Calibration Level</span>
               <span id="sliderValueReadout" class="slider-val-readout">30.0 PSI</span>
             </div>
-            <input type="range" id="customSlider" class="grip-slider" min="5" max="75" value="30" step="0.5">
+            <input type="range" id="customSlider" class="grip-slider" min="5" max="60" value="30" step="0.5">
           </div>
 
           <div class="btn-grid" style="grid-template-columns: 1fr;">
@@ -797,12 +881,12 @@
 
     function getApiBase() {
       if (serverIp) {
-        return `http://${serverIp}:8080`;
+        return `http://${serverIp}:8090`;
       }
       if (window.location.hostname && window.location.hostname !== "localhost") {
         return `${window.location.protocol}//${window.location.host}`;
       }
-      return "http://localhost:8080";
+      return "http://localhost:8090";
     }
 
     function toggleIpConfig() {
@@ -850,9 +934,71 @@
     const sliderValueReadout = document.getElementById("sliderValueReadout");
     const logConsole = document.getElementById("logConsole");
 
+    // Unit conversion states and helpers
+    const PSI_TO_BAR = 0.0689476;
+    let displayUnit = "PSI";
+    let latestData = null;
+
+    function convertPsiToBar(psi) {
+      return psi * PSI_TO_BAR;
+    }
+
+    function convertBarToPsi(bar) {
+      return bar / PSI_TO_BAR;
+    }
+
+    function toggleUnit(toggleEl) {
+      const isBar = toggleEl.checked;
+      displayUnit = isBar ? "BAR" : "PSI";
+      
+      // Update label active styling
+      document.querySelectorAll(".unit-toggle-label").forEach((el, index) => {
+        if ((index === 0 && !isBar) || (index === 1 && isBar)) {
+          el.classList.add("active");
+        } else {
+          el.classList.remove("active");
+        }
+      });
+      
+      // Update gauge unit text
+      document.querySelector(".pressure-unit").textContent = displayUnit;
+      
+      // Re-render profiles grid
+      renderProfilesGrid();
+      
+      // Update custom target slider range
+      const slider = document.getElementById("customSlider");
+      const currentVal = parseFloat(slider.value);
+      
+      if (displayUnit === "BAR") {
+        const barVal = convertPsiToBar(currentVal);
+        slider.min = (5 * PSI_TO_BAR).toFixed(2);
+        slider.max = (60 * PSI_TO_BAR).toFixed(2);
+        slider.step = "0.05";
+        slider.value = barVal;
+        sliderValueReadout.textContent = `${barVal.toFixed(2)} BAR`;
+      } else {
+        const psiVal = convertBarToPsi(currentVal);
+        slider.min = "5";
+        slider.max = "60";
+        slider.step = "0.5";
+        slider.value = psiVal;
+        sliderValueReadout.textContent = `${psiVal.toFixed(1)} PSI`;
+      }
+      
+      if (latestData) {
+        handleStateUpdate(latestData);
+      }
+    }
+
     // Dynamic slider handler
     customSlider.addEventListener("input", (e) => {
-      sliderValueReadout.textContent = `${parseFloat(e.target.value).toFixed(1)} PSI`;
+      const val = parseFloat(e.target.value);
+      if (displayUnit === "BAR") {
+        sliderValueReadout.textContent = `${val.toFixed(2)} BAR`;
+      } else {
+        sliderValueReadout.textContent = `${val.toFixed(1)} PSI`;
+      }
     });
 
     // Populate GRIP Grid
@@ -864,10 +1010,18 @@
         tile.id = `profile-${key}`;
         tile.className = "profile-tile";
         tile.onclick = () => selectProfile(key);
+        
+        let valDisplay = "";
+        if (displayUnit === "BAR") {
+          valDisplay = `${convertPsiToBar(p.target_psi).toFixed(2)} BAR`;
+        } else {
+          valDisplay = `${p.target_psi.toFixed(1)} PSI`;
+        }
+
         tile.innerHTML = `
           ${PROFILE_SVG_ICONS[key]}
           <div class="profile-label">${p.name.replace('_', ' ')}</div>
-          <div class="profile-val">${p.target_psi.toFixed(1)} PSI</div>
+          <div class="profile-val">${valDisplay}</div>
         `;
         profilesGrid.appendChild(tile);
       });
@@ -918,7 +1072,10 @@
         alert("Operation Aborted: Offline");
         return;
       }
-      const val = parseFloat(customSlider.value);
+      let val = parseFloat(customSlider.value);
+      if (displayUnit === "BAR") {
+        val = convertBarToPsi(val);
+      }
       try {
         let resp = await fetch(`${getApiBase()}/api/command`, {
           method: "POST",
@@ -964,6 +1121,7 @@
     }
 
     function handleStateUpdate(data) {
+      latestData = data;
       isConnected = data.connected;
 
       if (isConnected) {
@@ -978,9 +1136,15 @@
       const target = data.target_psi;
       const tolerance = data.tolerance_psi;
       
-      pressureVal.textContent = pressure.toFixed(1);
-      metaTarget.textContent = target > 0 ? `${target.toFixed(1)} PSI` : "--";
-      metaTolerance.textContent = target > 0 ? `${tolerance.toFixed(1)} PSI` : "--";
+      if (displayUnit === "BAR") {
+        pressureVal.textContent = convertPsiToBar(pressure).toFixed(2);
+        metaTarget.textContent = target > 0 ? `${convertPsiToBar(target).toFixed(2)} BAR` : "--";
+        metaTolerance.textContent = target > 0 ? `${convertPsiToBar(tolerance).toFixed(2)} BAR` : "--";
+      } else {
+        pressureVal.textContent = pressure.toFixed(1);
+        metaTarget.textContent = target > 0 ? `${target.toFixed(1)} PSI` : "--";
+        metaTolerance.textContent = target > 0 ? `${tolerance.toFixed(1)} PSI` : "--";
+      }
 
       if (target > 0) {
         const pct = Math.min(pressure / target, 1.0);

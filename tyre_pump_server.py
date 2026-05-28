@@ -76,6 +76,7 @@ PROFILES: dict[str, dict] = {
     },
 }
 
+
 class DeviceState:
     def __init__(self):
         self.connected: bool = False
@@ -104,10 +105,12 @@ class DeviceState:
         self.errors.append(entry)
         self.log_event(entry)
 
+
 device = DeviceState()
 
 # ── Web server state and broadcasting ───────────────────────────────────────
 http_clients: list[asyncio.Queue] = []
+
 
 def get_device_state_dict() -> dict:
     return {
@@ -123,6 +126,7 @@ def get_device_state_dict() -> dict:
         "errors": list(device.errors[-15:]),
     }
 
+
 def broadcast_state():
     state_data = get_device_state_dict()
     for q in list(http_clients):
@@ -136,11 +140,13 @@ def broadcast_state():
         except Exception:
             pass
 
+
 # ── Protocol helpers ────────────────────────────────────────────────────────
 def build_cmd(cmd: str, **kwargs) -> str:
     payload = {"cmd": cmd}
     payload.update(kwargs)
     return json.dumps(payload) + "\n"
+
 
 async def send_command(cmd: str, **kwargs):
     if device.writer is None or device.writer.is_closing():
@@ -156,6 +162,7 @@ async def send_command(cmd: str, **kwargs):
         device.log_error(f"Send failed: {e}")
         broadcast_state()
 
+
 async def send_profile(profile_name: str):
     if profile_name not in PROFILES:
         print(f"  [!] Unknown profile: {profile_name}")
@@ -168,9 +175,10 @@ async def send_profile(profile_name: str):
         tolerance_psi=p["tolerance_psi"],
     )
 
+
 # ── TCP Client connection handling ──────────────────────────────────────────
 async def handle_client(reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
-    peer = writer.get_extra_info('peername')
+    peer = writer.get_extra_info("peername")
     device.connected = True
     device.writer = writer
     device.last_seen = time.time()
@@ -182,10 +190,10 @@ async def handle_client(reader: asyncio.StreamReader, writer: asyncio.StreamWrit
             line_bytes = await reader.readline()
             if not line_bytes:
                 break
-            line = line_bytes.decode('utf-8', errors='ignore').strip()
+            line = line_bytes.decode("utf-8", errors="ignore").strip()
             if not line:
                 continue
-            
+
             try:
                 msg = json.loads(line)
             except json.JSONDecodeError:
@@ -230,6 +238,7 @@ async def handle_client(reader: asyncio.StreamReader, writer: asyncio.StreamWrit
         except Exception:
             pass
 
+
 # ── CLI Loop ─────────────────────────────────────────────────────────────────
 HELP_TEXT = """
 Commands:
@@ -245,6 +254,7 @@ Commands:
   quit / exit  Shut down server
 """
 
+
 async def cli_loop():
     profile_keys = list(PROFILES.keys())
 
@@ -254,7 +264,9 @@ async def cli_loop():
     print("Waiting for ESP32 connection...")
     print("\nProfiles available:")
     for i, (k, p) in enumerate(PROFILES.items(), 1):
-        print(f"  {i}. {p['name']:12s} -> {p['target_psi']:.1f} PSI  ({p['description']})")
+        print(
+            f"  {i}. {p['name']:12s} -> {p['target_psi']:.1f} PSI  ({p['description']})"
+        )
 
     print(HELP_TEXT)
 
@@ -266,7 +278,9 @@ async def cli_loop():
             print("\nShutting down...")
             break
         except Exception as e:
-            print(f"\n[!] CLI standard input unavailable ({e}). Running in background-only mode.")
+            print(
+                f"\n[!] CLI standard input unavailable ({e}). Running in background-only mode."
+            )
             await asyncio.Event().wait()
             break
 
@@ -281,7 +295,9 @@ async def cli_loop():
             print(HELP_TEXT)
         elif cmd == "profiles":
             for i, (k, p) in enumerate(PROFILES.items(), 1):
-                print(f"  {i}. {k:12s} -> {p['target_psi']:.1f} PSI  ({p['description']})")
+                print(
+                    f"  {i}. {k:12s} -> {p['target_psi']:.1f} PSI  ({p['description']})"
+                )
         elif cmd == "log":
             for e in device.events:
                 print(f"  {e}")
@@ -300,7 +316,9 @@ async def cli_loop():
                     target_psi=psi,
                     tolerance_psi=1.0,
                 )
-                print(f"  -> Target set to {psi:.1f} PSI (type 'start' to begin operation)")
+                print(
+                    f"  -> Target set to {psi:.1f} PSI (type 'start' to begin operation)"
+                )
             except ValueError:
                 print("  Usage: deflate <PSI>")
         elif cmd == "custom" and len(parts) == 2:
@@ -312,7 +330,9 @@ async def cli_loop():
                     target_psi=psi,
                     tolerance_psi=1.0,
                 )
-                print(f"  -> Custom target set to {psi:.1f} PSI (type 'start' to begin operation)")
+                print(
+                    f"  -> Custom target set to {psi:.1f} PSI (type 'start' to begin operation)"
+                )
             except ValueError:
                 print("  Usage: custom <PSI>")
         elif cmd.isdigit():
@@ -332,6 +352,7 @@ async def cli_loop():
     if device.writer:
         await send_command("stop")
 
+
 async def display_task():
     while True:
         await asyncio.sleep(2.0)
@@ -344,16 +365,18 @@ async def display_task():
                     f"pump={'ON ' if device.pump else 'off'}  valve={'OPEN  ' if device.valve else 'closed'}"
                 )
 
+
 # ── HTTP Web Dashboard Server ────────────────────────────────────────────────
 HTTP_HOST = "0.0.0.0"
-HTTP_PORT = 8080
+HTTP_PORT = 8090
+
 
 async def handle_http(reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
     try:
         req_line = await reader.readline()
         if not req_line:
             return
-        parts = req_line.decode('utf-8', errors='ignore').split()
+        parts = req_line.decode("utf-8", errors="ignore").split()
         if len(parts) < 2:
             return
         method, path = parts[0], parts[1]
@@ -361,7 +384,7 @@ async def handle_http(reader: asyncio.StreamReader, writer: asyncio.StreamWriter
         content_length = 0
         while True:
             line = await reader.readline()
-            line_str = line.decode('utf-8', errors='ignore').strip()
+            line_str = line.decode("utf-8", errors="ignore").strip()
             if not line_str:
                 break
             if line_str.lower().startswith("content-length:"):
@@ -386,7 +409,10 @@ async def handle_http(reader: asyncio.StreamReader, writer: asyncio.StreamWriter
             except Exception as e:
                 err_msg = f"Error reading index.html: {e}"
                 resp_bytes = err_msg.encode("utf-8")
-                writer.write(f"HTTP/1.1 500 Internal Error\r\nContent-Length: {len(resp_bytes)}\r\nConnection: close\r\n\r\n".encode() + resp_bytes)
+                writer.write(
+                    f"HTTP/1.1 500 Internal Error\r\nContent-Length: {len(resp_bytes)}\r\nConnection: close\r\n\r\n".encode()
+                    + resp_bytes
+                )
                 await writer.drain()
 
         elif method == "GET" and path == "/events":
@@ -402,7 +428,7 @@ async def handle_http(reader: asyncio.StreamReader, writer: asyncio.StreamWriter
 
             q = asyncio.Queue(maxsize=10)
             http_clients.append(q)
-            
+
             initial_state = get_device_state_dict()
             writer.write(f"data: {json.dumps(initial_state)}\n\n".encode("utf-8"))
             await writer.drain()
@@ -419,12 +445,14 @@ async def handle_http(reader: asyncio.StreamReader, writer: asyncio.StreamWriter
                     http_clients.remove(q)
 
         elif method == "POST" and path == "/api/command":
-            body_bytes = await reader.readexactly(content_length) if content_length > 0 else b""
+            body_bytes = (
+                await reader.readexactly(content_length) if content_length > 0 else b""
+            )
             resp_body = {"status": "ok"}
             try:
                 cmd_data = json.loads(body_bytes.decode("utf-8"))
                 cmd = cmd_data.get("cmd")
-                
+
                 if cmd == "start":
                     await send_command("start")
                 elif cmd == "stop":
@@ -449,7 +477,10 @@ async def handle_http(reader: asyncio.StreamReader, writer: asyncio.StreamWriter
                         tolerance_psi=1.0,
                     )
                 else:
-                    resp_body = {"status": "error", "message": f"Unknown command: {cmd}"}
+                    resp_body = {
+                        "status": "error",
+                        "message": f"Unknown command: {cmd}",
+                    }
             except Exception as e:
                 resp_body = {"status": "error", "message": str(e)}
 
@@ -483,11 +514,12 @@ async def handle_http(reader: asyncio.StreamReader, writer: asyncio.StreamWriter
         except Exception:
             pass
 
+
 # ── Entry point ──────────────────────────────────────────────────────────────
 async def main():
     server = await asyncio.start_server(handle_client, HOST, PORT)
     http_server = await asyncio.start_server(handle_http, HTTP_HOST, HTTP_PORT)
-    addrs  = ", ".join(str(s.getsockname()) for s in server.sockets)
+    addrs = ", ".join(str(s.getsockname()) for s in server.sockets)
     http_addrs = ", ".join(str(s.getsockname()) for s in http_server.sockets)
     print(f"TCP server listening on {addrs}")
     print(f"HTTP server listening on {http_addrs}")
@@ -499,6 +531,7 @@ async def main():
             cli_loop(),
             display_task(),
         )
+
 
 if __name__ == "__main__":
     try:

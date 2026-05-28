@@ -132,14 +132,14 @@ class MockEsp32:
                 self.pump = True
                 self.valve = False
                 self.state = "inflating"
-                # Inflate 0.5 PSI per 100ms
-                self.pressure_psi += 0.5
+                # Inflate 0.1 PSI per 100ms
+                self.pressure_psi += 0.1
             else:
                 self.pump = False
                 self.valve = True
                 self.state = "deflating"
-                # Deflate 0.5 PSI per 100ms
-                self.pressure_psi -= 0.5
+                # Deflate 0.1 PSI per 100ms
+                self.pressure_psi -= 0.1
 
     def run(self):
         print(f"Connecting to {SERVER_HOST}:{SERVER_PORT}...")
